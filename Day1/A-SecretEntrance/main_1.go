@@ -1,0 +1,1 @@
+/home/mason/git/advent-of-code-2025/Day1/A-SecretEntrance/main.go
