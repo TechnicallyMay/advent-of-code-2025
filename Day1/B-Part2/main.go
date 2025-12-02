@@ -35,7 +35,7 @@ func main() {
 		newZeros := calculateZeroPasses(startingSum, newSum, sum)
 		zeroCount += newZeros
 
-		fmt.Println("Starting:", startingSum, "New:", newSum, "Wrapped:", sum, "Zeros:", newZeros)
+		// fmt.Println("Starting:", startingSum, "New:", newSum, "Wrapped:", sum, "Zeros:", newZeros)
 	}
 
 	fmt.Println("The dial landed on zero", zeroCount, "times.")
