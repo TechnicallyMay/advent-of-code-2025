@@ -9,7 +9,7 @@ import (
 
 func main() {
 	// Read in the input file
-	path := "./input.txt"
+	path := "../sample_input.txt"
 	buf, _ := os.Open(path)
 	defer buf.Close()
 
