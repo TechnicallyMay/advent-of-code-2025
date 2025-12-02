@@ -19,8 +19,7 @@ func main() {
 	sum := 50
 	zeroCount := 0
 
-	// Iterate over every line in the file instead of reading the whole
-	// file into memory
+	// Iterate over every line in the file instead of reading the whole file into memory
 	for scanner.Scan() {
 		input := scanner.Text()
 		direction := string(input[0])
@@ -28,44 +27,61 @@ func main() {
 
 		if direction == "L" {
 			distance *= -1
-
-			// This is a silly correction I have to make. My algorithm doesn't count when we turn left and land on zero, instead it counts
-			// when we wrap around to 99. So, preempt this by subtracting the wrap it's going to count.
-			// I'd like to come up with a more elegant solution.
-			if sum == 0 {
-				zeroCount--
-			}
 		}
 
-		sum += distance
-		zeroPasses := 0
-		sum, zeroPasses = wrap(sum)
-		zeroCount += zeroPasses
+		startingSum := sum
+		newSum := startingSum + distance
+		sum = wrap(newSum)
+		newZeros := calculateZeroPasses(startingSum, newSum, sum)
+		zeroCount += newZeros
 
-		// Part of the silly correction as well. It doesn't count when we land on zero since we didn't technically wrap.
-		if direction == "L" && sum == 0 {
-			zeroCount += 1
-		}
+		fmt.Println("Starting:", startingSum, "New:", newSum, "Wrapped:", sum, "Zeros:", newZeros)
 	}
+
 	fmt.Println("The dial landed on zero", zeroCount, "times.")
 }
 
 // Wrap the given value around the dial, assumes a minimum of 0
 // maximum of 100. Count how many times we wrap
-func wrap(val int) (int, int) {
-	orig := val
+func wrap(val int) int {
 	domain := 100
 
 	if val < 0 {
 		val += domain * (-val/domain + 1)
 	}
 
-	result := val % domain
-	zeros := abs((result - orig) / domain)
-
-	return result, zeros
+	return val % domain
 }
 
+// startingSum - The dial value before turning
+// newSum      - The dial value after turning without constraints (can be above 99 and below 0)
+// wrappedSum  - The dial value after wrapping between 0-99
+func calculateZeroPasses(startingSum int, newSum int, wrappedSum int) int {
+	zeros := abs((wrappedSum - newSum) / 100)
+	// When we're rotating right (positive number), the number of times we pass zero is
+	// equivalent to the number of times we've wrapped (since we wrap from 99 => 0)
+	if newSum > 0 {
+		return zeros
+	}
+
+	// Now make some adjustments for when we're turning left.
+
+	// If we started on 0 we need to subtract a wrap, because the counted wrap
+	// didn't actually land us on zero (it was from 0 => 99)
+	if startingSum == 0 {
+		zeros--
+	}
+
+	// If we ended on 0 we need to add a wrap, because it landing on zero doesn't result in a wrap
+	if wrappedSum == 0 {
+		zeros++
+	}
+
+	return zeros
+
+}
+
+// Absolute value for an int
 func abs(val int) int {
 	if val < 0 {
 		return val * -1
