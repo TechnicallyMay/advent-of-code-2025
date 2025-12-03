@@ -17,7 +17,7 @@ func main() {
 	defer buf.Close()
 
 	scanner := bufio.NewScanner(buf)
-	scanner.Split(ScanCommas)
+	scanner.Split(scanCommas)
 
 	sum := 0
 	for scanner.Scan() {
@@ -29,18 +29,8 @@ func main() {
 
 // For the given range (represented as number strings), finds all invalid ids within the range and returns the sum of those invalid ids
 func sumInvalidIdsInRange(minS string, maxS string) int {
-	rangeMax, maxerr := strconv.Atoi(maxS)
-	rangeMin, minerr := strconv.Atoi(minS)
+	rangeMax, _ := strconv.Atoi(maxS)
 
-	if maxerr != nil {
-		panic(maxerr)
-	} else if minerr != nil {
-		panic(minerr)
-	}
-
-	if rangeMin > rangeMax {
-		panic(fmt.Sprintf("%s - %s or as nums %d - %d", minS, maxS, rangeMin, rangeMax))
-	}
 	curr := minS
 	sum := 0
 
@@ -83,7 +73,7 @@ func splitNumberString(val string) (leftS string, leftI int, rightS string, righ
 // Unnecessary stuff I added to read an input file split by commas instead of newlines
 
 // An implementation of SplitFunc for the scanner which lets us read separated by commas instead of newlines
-func ScanCommas(data []byte, atEOF bool) (advance int, token []byte, err error) {
+func scanCommas(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if atEOF && len(data) == 0 {
 		return 0, nil, nil
 	}
