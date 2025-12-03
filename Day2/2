@@ -1,0 +1,105 @@
+package main
+
+import (
+	"bufio"
+	"bytes"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+)
+
+func main() {
+	// Read in the input file
+	path := "../example_input.txt"
+	buf, _ := os.Open(path)
+	defer buf.Close()
+
+	scanner := bufio.NewScanner(buf)
+	scanner.Split(scanCommas)
+
+	sum := 0
+	for scanner.Scan() {
+		parts := strings.Split(scanner.Text(), "-")
+
+		min := parts[0]
+		max := parts[1]
+		fmt.Println("\nRunning for", min, max)
+		sum += idkYet(parts[0], parts[1])
+	}
+	fmt.Println("Sum was", sum)
+}
+
+func idkYet(minS string, maxS string) int {
+
+	// TODO: If not even, increment
+
+	// Operation
+
+	maxI, _ := strconv.Atoi(maxS)
+
+	curr := minS
+	sum := 0
+
+	for true {
+		fullI, leftS, leftI, rightS, rightI := doTheSplit(curr)
+
+		if fullI > maxI {
+			break
+		}
+
+		match := 0
+		if len(curr)%2 != 0 {
+
+		} else if leftI == rightI {
+			match, _ = strconv.Atoi(leftS + rightS)
+		} else if leftI > rightI {
+			match, _ = strconv.Atoi(leftS + leftS)
+			if match > maxI {
+				break
+			}
+		}
+
+		if match != 0 {
+			fmt.Println("Found a match", match)
+		}
+		sum += match
+		curr = strconv.Itoa(leftI+1) + strings.Repeat("0", len(rightS))
+	}
+
+	return sum
+}
+
+func doTheSplit(val string) (fullI int, leftS string, leftI int, rightS string, rightI int) {
+	length := len(val) / 2
+
+	leftS = val[:length]
+	leftI, _ = strconv.Atoi(leftS)
+
+	rightS = val[length:]
+	rightI, _ = strconv.Atoi(rightS)
+
+	fullI, _ = strconv.Atoi(leftS + rightS)
+
+	return
+}
+
+// An implementation of SplitFunc for the scanner which lets us read separated by commas instead of newlines
+func scanCommas(data []byte, atEOF bool) (advance int, token []byte, err error) {
+
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+
+	if i := bytes.IndexByte(data, ','); i >= 0 {
+		return i + 1, data[0:i], nil
+
+	}
+
+	if atEOF {
+		return len(data), data, nil
+	}
+
+	// Request more data.
+	return 0, nil, nil
+}
