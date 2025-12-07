@@ -3,13 +3,13 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/big"
 	"os"
-	"strconv"
 	"strings"
 )
 
 func main() {
-	path := "../example_input.txt"
+	path := "../input.txt"
 
 	buf, err := os.Open(path)
 	handleErr(err)
@@ -19,46 +19,70 @@ func main() {
 	scanner.Scan()
 	firstRow := scanner.Text()
 	maxAsString := strings.Repeat("1", len(firstRow))
-	max, err := strconv.ParseInt(maxAsString, 2, 64)
+
+	max := parseBin(maxAsString)
 
 	prevRow := binary(firstRow)
 	sum := 0
 	for scanner.Scan() {
 		line := scanner.Text()
 		currRow := binary(line)
-		hitSplitters := currRow & prevRow
+
+		hitSplitters := new(big.Int)
+		hitSplitters.And(currRow, prevRow)
 		sum += countOnes(hitSplitters)
-		splitLasers := (hitSplitters << 1) | (hitSplitters >> 1)
 
-		mergedLasers := (prevRow | splitLasers) ^ hitSplitters
+		splitLasers := new(big.Int)
+		leftShift := new(big.Int)
+		rightShift := new(big.Int)
+		leftShift.Lsh(hitSplitters, 1)
+		rightShift.Rsh(hitSplitters, 1)
+		splitLasers.Or(leftShift, rightShift)
 
-		finalRow := mergedLasers & max
+		mergedLasers := new(big.Int)
+		mergedLasers.Or(prevRow, splitLasers)
+
+		mergedLasersWithoutSplitters := new(big.Int)
+		mergedLasersWithoutSplitters.Xor(mergedLasers, hitSplitters)
+
+		finalRow := new(big.Int)
+		finalRow.And(mergedLasersWithoutSplitters, max)
 
 		// fmt.Println("------------------------------------")
-		// fmt.Println(padLeft(strconv.FormatInt(prevRow, 2), len(firstRow)), " - Previous Row")
-		// fmt.Println(padLeft(strconv.FormatInt(currRow, 2), len(firstRow)), " - Current Row")
-		// fmt.Println(padLeft(strconv.FormatInt(hitSplitters, 2), len(firstRow)), " - Hit Splitters")
-		// fmt.Println(padLeft(strconv.FormatInt(splitLasers, 2), len(firstRow)), " - Split Lasers")
-		fmt.Println(padLeft(strconv.FormatInt(finalRow, 2), len(firstRow)), " - Final Row")
-
+		// fmt.Printf("%b - Prev\n", prevRow)
+		// fmt.Printf("%b - Curr\n", currRow)
+		// fmt.Printf("%b - Hit\n", hitSplitters)
+		// fmt.Printf("%b - Split\n", splitLasers)
+		// fmt.Printf("%b - Merged\n", mergedLasers)
+		// fmt.Printf("%b - Merged - Split\n", mergedLasersWithoutSplitters)
+		fmt.Printf("%b - Final Row\n", finalRow)
 		prevRow = finalRow
 	}
 
 	fmt.Println("There were", sum, "splits")
 }
 
-func countOnes(val int64) int {
+func countOnes(val *big.Int) int {
 	// There is a O(1) way to count the 1s in a binary number, but I don't understand
 	// it and won't use it. https://stackoverflow.com/a/17498333
 	ones := 0
-	for val != 0 {
-		val = val & (val - 1)
+
+	copy := new(big.Int)
+	copy.Set(val)
+	zero := new(big.Int)
+	one := new(big.Int)
+	one.SetBit(one, 0, 1)
+	for copy.Cmp(zero) != 0 {
+		copyM1 := new(big.Int)
+		copyM1.Sub(copy, one)
+
+		copy.And(copy, copyM1)
 		ones++
 	}
 	return ones
 }
 
-func binary(line string) int64 {
+func binary(line string) *big.Int {
 	binString := make([]rune, len(line))
 
 	for i, char := range line {
@@ -69,10 +93,15 @@ func binary(line string) int64 {
 		}
 	}
 
-	val, err := strconv.ParseInt(string(binString), 2, 64)
+	return parseBin(string(binString))
+}
+
+func parseBin(bin string) *big.Int {
+	i := new(big.Int)
+	_, err := fmt.Sscanf(string(bin), "%b", i)
 	handleErr(err)
 
-	return val
+	return i
 }
 
 func padLeft(message string, length int) string {
