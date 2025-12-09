@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -15,9 +16,7 @@ type Vec3 struct {
 
 type Connection struct {
 	a, b int
-	// The x/ coords
-	aX, bX int
-	dist   int
+	dist int
 }
 
 func main() {
@@ -42,73 +41,57 @@ func main() {
 		inputs = append(inputs, Vec3{x: x, y: y, z: z})
 	}
 
-	// Make all possible connections
-	conns := make([]Connection, 0)
+	// Make all connections
+	connections := make([]Connection, 0)
 	for i := 0; i < len(inputs)-1; i++ {
 		a := inputs[i]
 		for j := i + 1; j < len(inputs); j++ {
 			b := inputs[j]
 			dist := a.DstSqrd(b)
-			conns = append(conns, Connection{a: i, b: j, aX: a.x, bX: b.x, dist: dist})
+			connections = append(connections, Connection{a: i, b: j, dist: dist})
 		}
 	}
 
-	// Order from closest to furthest
-	sort.Slice(conns, func(i, j int) bool {
-		return conns[i].dist < conns[j].dist
+	// Order by closest connections
+	sort.Slice(connections, func(i, j int) bool {
+		return connections[i].dist < connections[j].dist
 	})
 
-	// Create a map of each node's adjacent nodes
+	// Take the desired number of closest connections
+	desiredConnections := 1000
+	formedConnections := connections[:desiredConnections]
+
+	// Create adjacency map
 	adj := make(map[int][]int, 0)
-	conCnt := 0
-
-	// At a minimum, each node must be connected to one other. So keep adding adjacencies
-	// until that prereq is met. This prevents us from doing the costly BFS until we have to
-	var newest Connection
-	for len(adj) < len(inputs) {
-		newest = addAdjacency(adj, conns, conCnt)
-		conCnt++
+	for _, c := range formedConnections {
+		adj[c.a] = append(adj[c.a], c.b)
+		adj[c.b] = append(adj[c.b], c.a)
 	}
 
-	// Keep adding one more connection until we have a single connected region
-	for true {
-		done := isSingleRegion(adj)
-		if done {
-			fmt.Println("Ultimately had to make", conCnt, "connections")
-			fmt.Println("The final connection X coords multipled were", newest.aX*newest.bX)
-			break
-		}
+	res := countConnectedRegionSizes(adj)
+	slices.Sort(res)
+	slices.Reverse(res)
 
-		newest = addAdjacency(adj, conns, conCnt)
-		conCnt++
+	sum := 1
+	for i := range 3 {
+		sum *= res[i]
 	}
+
+	fmt.Println(sum)
 }
 
-func addAdjacency(adj map[int][]int, conns []Connection, index int) Connection {
-	conn := conns[index]
-	fmt.Println("Making a new connection", conn, "at index", index)
-	adj[conn.a] = append(adj[conn.a], conn.b)
-	adj[conn.b] = append(adj[conn.b], conn.a)
-	return conn
-}
-
-// Determines if the adjacency graph contains a single connected region.
-// This means that each node is connected directly or indirectly to each other node
-func isSingleRegion(adj map[int][]int) bool {
+func countConnectedRegionSizes(adj map[int][]int) []int {
 	visited := make(map[int]bool, 0)
 
+	counts := make([]int, 0)
 	// Go over each node and its connections. If it's already been visited
 	// we have already counted the node as part of another region
-	var first int
 	for k := range adj {
-		first = k
-		break
+		if !visited[k] {
+			counts = append(counts, bfsConnected(adj, k, visited))
+		}
 	}
-
-	// We know all nodes are connected if a breadth first search reaches
-	// all the nodes in the graph
-	count := bfsConnected(adj, first, visited)
-	return count == len(adj)
+	return counts
 }
 
 // Breadth first search through the adjacencies. Doesn't return the visited nodes
